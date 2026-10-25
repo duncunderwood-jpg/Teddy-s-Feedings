@@ -1,0 +1,41 @@
+# Teddy's Feedings: FREE iOS cloud compile and sideloading build.
+# Use the ios-free-ipa workflow on Codemagic's free individual macOS M2 plan.
+# Produces an unsigned IPA for Sideloadly/AltStore on Windows (NOT TestFlight).
+# Free Apple account signs the app on Windows; reinstall / refresh within 7 days.
+workflows:
+  ios-free-ipa:
+    name: FREE - Build iPhone IPA (unsigned, for Sideloadly)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+    scripts:
+      - name: Extract source project
+        script: unzip -q "$CM_BUILD_DIR/TeddysFeedings-Free-Cloud-Build.zip" -d "$CM_BUILD_DIR/source"
+      - name: Build Teddy's Feedings for a real iPhone without signing
+        script: |
+          set -euo pipefail
+          xcodebuild \
+            -project "$CM_BUILD_DIR/source/TeddysFeedings/TeddysFeedings.xcodeproj" \
+            -scheme TeddysFeedings \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$CM_BUILD_DIR/build/derived" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Package unsigned IPA for signing on Windows
+        script: |
+          set -euo pipefail
+          APP="$CM_BUILD_DIR/build/derived/Build/Products/Release-iphoneos/TeddysFeedings.app"
+          test -d "$APP"
+          mkdir -p "$CM_BUILD_DIR/artifacts/Payload"
+          cp -R "$APP" "$CM_BUILD_DIR/artifacts/Payload/"
+          cd "$CM_BUILD_DIR/artifacts"
+          zip -qry Teddy-Feedings-unsigned.ipa Payload
+          test -s Teddy-Feedings-unsigned.ipa
+    artifacts:
+      - artifacts/Teddy-Feedings-unsigned.ipa
+      - /tmp/xcodebuild_logs/*.log
