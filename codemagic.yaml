@@ -28,6 +28,16 @@ workflows:
         /tmp/teddy-family-tests
 
         '
+    - name: Test feeding analytics and midnight totals
+      script: 'set -euo pipefail
+
+        cd "$CM_BUILD_DIR/source/TeddysFeedings"
+
+        swiftc TeddysFeedings/Models.swift TeddysFeedings/FeedingAnalytics.swift Tests/AnalyticsTests.swift -o /tmp/teddy-analytics-tests
+
+        /tmp/teddy-analytics-tests
+
+        '
     - name: Build Teddy's Feedings for a real iPhone without signing
       script: "set -euo pipefail\nxcodebuild \\\n  -project \"$CM_BUILD_DIR/source/TeddysFeedings/TeddysFeedings.xcodeproj\"\
         \ \\\n  -scheme TeddysFeedings \\\n  -configuration Release \\\n  -sdk iphoneos \\\n  -destination 'generic/platform=iOS'\
@@ -55,8 +65,8 @@ workflows:
       script: "set -euo pipefail\npython3 - <<'PYTHON'\nimport os, wave, plistlib\nfrom pathlib import Path\napp=Path(os.environ['CM_BUILD_DIR'])/'build/derived/Build/Products/Release-iphoneos/TeddysFeedings.app'\n\
         with wave.open(str(app/'TeddyRattle.wav')) as sound:\n    assert sound.getnchannels()==1 and sound.getsampwidth()==2\n\
         \    assert 0 < sound.getnframes()/sound.getframerate() < 30\nwith (app/'Info.plist').open('rb') as f:\n    assert\
-        \ plistlib.load(f)['CFBundleShortVersionString']=='1.6'\nprint('Bundled lullaby and version verified')\nPYTHON"
-    - name: Review feeding and pumping charts
+        \ plistlib.load(f)['CFBundleShortVersionString']=='1.7'\nprint('Bundled lullaby and version verified')\nPYTHON"
+    - name: Review refreshed app screens
       script: "set -euo pipefail\nxcodebuild -project \"$CM_BUILD_DIR/source/TeddysFeedings/TeddysFeedings.xcodeproj\" -scheme\
         \ TeddysFeedings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath\
         \ \"$CM_BUILD_DIR/build/simulator\" CODE_SIGNING_ALLOWED=NO build > /tmp/teddy-simulator-build.log 2>&1\nDEVICE=$(xcrun\
@@ -64,13 +74,13 @@ workflows:
         udid\"] for k,v in sorted(d.items(),reverse=True) if \"iOS\" in k for x in v if \"iPhone\" in x[\"name\"]))')\nxcrun\
         \ simctl boot \"$DEVICE\" || true\nxcrun simctl bootstatus \"$DEVICE\" -b\nxcrun simctl install \"$DEVICE\" \"$CM_BUILD_DIR/build/simulator/Build/Products/Debug-iphonesimulator/TeddysFeedings.app\"\
         \nxcrun simctl status_bar \"$DEVICE\" override --time '9:41' --batteryState charged --batteryLevel 100\nmkdir -p \"\
-        $CM_BUILD_DIR/artifacts/screenshots\"\nfor TAB in 2 4 3; do\n  xcrun simctl terminate \"$DEVICE\" com.teddyfamily.teddysfeedings\
+        $CM_BUILD_DIR/artifacts/screenshots\"\nfor TAB in 0 1 2 4 5 3; do\n  xcrun simctl terminate \"$DEVICE\" com.teddyfamily.teddysfeedings\
         \ || true\n  xcrun simctl launch \"$DEVICE\" com.teddyfamily.teddysfeedings --review-demo --screenshot-tab \"$TAB\"\
-        \n  sleep 3\n  xcrun simctl io \"$DEVICE\" screenshot \"$CM_BUILD_DIR/artifacts/screenshots/tab$TAB.png\"\ndone\n\
+        \n  sleep 5\n  xcrun simctl io \"$DEVICE\" screenshot \"$CM_BUILD_DIR/artifacts/screenshots/tab$TAB.png\"\ndone\n\
         xcrun simctl terminate \"$DEVICE\" com.teddyfamily.teddysfeedings || true\nxcrun simctl launch \"$DEVICE\" com.teddyfamily.teddysfeedings\
-        \ --review-demo --screenshot-tab 3 --screenshot-sharing\nsleep 3\nxcrun simctl io \"$DEVICE\" screenshot \"$CM_BUILD_DIR/artifacts/screenshots/family-sharing.png\"\
-        \ncd \"$CM_BUILD_DIR/artifacts\"\nzip -qry Teddy-v1.6-Simulator-Review.zip screenshots\n"
+        \ --review-demo --screenshot-tab 3 --screenshot-sharing\nsleep 5\nxcrun simctl io \"$DEVICE\" screenshot \"$CM_BUILD_DIR/artifacts/screenshots/family-sharing.png\"\
+        \ncd \"$CM_BUILD_DIR/artifacts\"\nzip -qry Teddy-v1.7-Simulator-Review.zip screenshots\n"
     artifacts:
     - artifacts/Teddy-Feedings-unsigned.ipa
-    - artifacts/Teddy-v1.6-Simulator-Review.zip
+    - artifacts/Teddy-v1.7-Simulator-Review.zip
     - /tmp/teddy-simulator-build.log
