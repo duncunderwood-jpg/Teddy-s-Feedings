@@ -65,7 +65,7 @@ workflows:
       script: "set -euo pipefail\npython3 - <<'PYTHON'\nimport os, wave, plistlib\nfrom pathlib import Path\napp=Path(os.environ['CM_BUILD_DIR'])/'build/derived/Build/Products/Release-iphoneos/TeddysFeedings.app'\n\
         with wave.open(str(app/'TeddyRattle.wav')) as sound:\n    assert sound.getnchannels()==1 and sound.getsampwidth()==2\n\
         \    assert 0 < sound.getnframes()/sound.getframerate() < 30\nwith (app/'Info.plist').open('rb') as f:\n    assert\
-        \ plistlib.load(f)['CFBundleShortVersionString']=='1.7'\nprint('Bundled lullaby and version verified')\nPYTHON"
+        \ plistlib.load(f)['CFBundleShortVersionString']=='1.8'\nprint('Bundled lullaby and version verified')\nPYTHON"
     - name: Review refreshed app screens
       script: "set -euo pipefail\nxcodebuild -project \"$CM_BUILD_DIR/source/TeddysFeedings/TeddysFeedings.xcodeproj\" -scheme\
         \ TeddysFeedings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath\
@@ -82,8 +82,8 @@ workflows:
         \ \"$DEVICE\" screenshot \"$CM_BUILD_DIR/artifacts/screenshots/tab$TAB.png\"\ndone\nxcrun simctl terminate \"$DEVICE\"\
         \ com.teddyfamily.teddysfeedings || true\nxcrun simctl launch \"$DEVICE\" com.teddyfamily.teddysfeedings --review-demo\
         \ --screenshot-tab 3 --screenshot-sharing\nsleep 5\nxcrun simctl io \"$DEVICE\" screenshot \"$CM_BUILD_DIR/artifacts/screenshots/family-sharing.png\"\
-        \ncd \"$CM_BUILD_DIR/artifacts\"\nzip -qry Teddy-v1.7-Simulator-Review.zip screenshots\n"
+        \ncd \"$CM_BUILD_DIR/artifacts\"\nzip -qry Teddy-v1.8-Simulator-Review.zip screenshots\n"
     artifacts:
     - artifacts/Teddy-Feedings-unsigned.ipa
-    - artifacts/Teddy-v1.7-Simulator-Review.zip
+    - artifacts/Teddy-v1.8-Simulator-Review.zip
     - /tmp/teddy-simulator-build.log
