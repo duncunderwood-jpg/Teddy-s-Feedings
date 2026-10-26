@@ -42,7 +42,7 @@ workflows:
           cd "$CM_BUILD_DIR/artifacts"
           zip -qry Teddy-Feedings-unsigned.ipa Payload
           test -s Teddy-Feedings-unsigned.ipa
-      - name: Render nursery screens in light and dark device appearances
+      - name: Review changed feeding flows in simulator
         script: |
           set -euo pipefail
           xcodebuild -project "$CM_BUILD_DIR/source/TeddysFeedings/TeddysFeedings.xcodeproj" -scheme TeddysFeedings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$CM_BUILD_DIR/build/simulator" CODE_SIGNING_ALLOWED=NO build > /tmp/teddy-simulator-build.log 2>&1
@@ -52,23 +52,23 @@ workflows:
           xcrun simctl install "$DEVICE" "$CM_BUILD_DIR/build/simulator/Build/Products/Debug-iphonesimulator/TeddysFeedings.app"
           xcrun simctl status_bar "$DEVICE" override --time '9:41' --batteryState charged --batteryLevel 100
           mkdir -p "$CM_BUILD_DIR/artifacts/screenshots"
-          for MODE in light dark; do
-            xcrun simctl ui "$DEVICE" appearance "$MODE"
-            for TAB in 0 1 2 3; do
-              xcrun simctl terminate "$DEVICE" com.teddyfamily.teddysfeedings || true
-              xcrun simctl launch "$DEVICE" com.teddyfamily.teddysfeedings --screenshot-tab "$TAB"
-              sleep 3
-              xcrun simctl io "$DEVICE" screenshot "$CM_BUILD_DIR/artifacts/screenshots/$MODE-tab$TAB.png"
-            done
+          xcrun simctl ui "$DEVICE" appearance light
+          for TAB in 0 1 3; do
+            xcrun simctl terminate "$DEVICE" com.teddyfamily.teddysfeedings || true
+            xcrun simctl launch "$DEVICE" com.teddyfamily.teddysfeedings --review-demo --screenshot-tab "$TAB"
+            sleep 2
+            xcrun simctl io "$DEVICE" screenshot "$CM_BUILD_DIR/artifacts/screenshots/tab$TAB.png"
           done
-          xcrun simctl terminate "$DEVICE" com.teddyfamily.teddysfeedings || true
-          xcrun simctl launch "$DEVICE" com.teddyfamily.teddysfeedings --screenshot-reminder
-          sleep 3
-          xcrun simctl io "$DEVICE" screenshot "$CM_BUILD_DIR/artifacts/screenshots/feeding-message.png"
+          for SCREEN in reminder editor; do
+            xcrun simctl terminate "$DEVICE" com.teddyfamily.teddysfeedings || true
+            xcrun simctl launch "$DEVICE" com.teddyfamily.teddysfeedings --review-demo "--screenshot-$SCREEN"
+            sleep 2
+            xcrun simctl io "$DEVICE" screenshot "$CM_BUILD_DIR/artifacts/screenshots/$SCREEN.png"
+          done
           cd "$CM_BUILD_DIR/artifacts"
-          zip -qry Teddy-v1.4-Simulator-Review.zip screenshots
+          zip -qry Teddy-v1.5-Simulator-Review.zip screenshots
     artifacts:
       - artifacts/Teddy-Feedings-unsigned.ipa
-      - artifacts/Teddy-v1.4-Simulator-Review.zip
+      - artifacts/Teddy-v1.5-Simulator-Review.zip
       - /tmp/teddy-simulator-build.log
       - /tmp/xcodebuild_logs/*.log
