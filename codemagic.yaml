@@ -18,6 +18,16 @@ workflows:
         /tmp/teddy-parser-tests
 
         '
+    - name: Test family sync conflict handling
+      script: 'set -euo pipefail
+
+        cd "$CM_BUILD_DIR/source/TeddysFeedings"
+
+        swiftc TeddysFeedings/Models.swift TeddysFeedings/FamilySyncModels.swift Tests/FamilySyncTests.swift -o /tmp/teddy-family-tests
+
+        /tmp/teddy-family-tests
+
+        '
     - name: Build Teddy's Feedings for a real iPhone without signing
       script: "set -euo pipefail\nxcodebuild \\\n  -project \"$CM_BUILD_DIR/source/TeddysFeedings/TeddysFeedings.xcodeproj\"\
         \ \\\n  -scheme TeddysFeedings \\\n  -configuration Release \\\n  -sdk iphoneos \\\n  -destination 'generic/platform=iOS'\
@@ -45,6 +55,20 @@ workflows:
       script: "set -euo pipefail\npython3 - <<'PYTHON'\nimport os, wave, plistlib\nfrom pathlib import Path\napp=Path(os.environ['CM_BUILD_DIR'])/'build/derived/Build/Products/Release-iphoneos/TeddysFeedings.app'\n\
         with wave.open(str(app/'TeddyRattle.wav')) as sound:\n    assert sound.getnchannels()==1 and sound.getsampwidth()==2\n\
         \    assert 0 < sound.getnframes()/sound.getframerate() < 30\nwith (app/'Info.plist').open('rb') as f:\n    assert\
-        \ plistlib.load(f)['CFBundleShortVersionString']=='1.5.1'\nprint('Bundled lullaby and version verified')\nPYTHON"
+        \ plistlib.load(f)['CFBundleShortVersionString']=='1.6'\nprint('Bundled lullaby and version verified')\nPYTHON"
+    - name: Review feeding and pumping charts
+      script: "set -euo pipefail\nxcodebuild -project \"$CM_BUILD_DIR/source/TeddysFeedings/TeddysFeedings.xcodeproj\" -scheme\
+        \ TeddysFeedings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath\
+        \ \"$CM_BUILD_DIR/build/simulator\" CODE_SIGNING_ALLOWED=NO build > /tmp/teddy-simulator-build.log 2>&1\nDEVICE=$(xcrun\
+        \ simctl list devices available -j | python3 -c 'import sys,json; d=json.load(sys.stdin)[\"devices\"]; print(next(x[\"\
+        udid\"] for k,v in sorted(d.items(),reverse=True) if \"iOS\" in k for x in v if \"iPhone\" in x[\"name\"]))')\nxcrun\
+        \ simctl boot \"$DEVICE\" || true\nxcrun simctl bootstatus \"$DEVICE\" -b\nxcrun simctl install \"$DEVICE\" \"$CM_BUILD_DIR/build/simulator/Build/Products/Debug-iphonesimulator/TeddysFeedings.app\"\
+        \nxcrun simctl status_bar \"$DEVICE\" override --time '9:41' --batteryState charged --batteryLevel 100\nmkdir -p \"\
+        $CM_BUILD_DIR/artifacts/screenshots\"\nfor TAB in 2 4 3; do\n  xcrun simctl terminate \"$DEVICE\" com.teddyfamily.teddysfeedings\
+        \ || true\n  xcrun simctl launch \"$DEVICE\" com.teddyfamily.teddysfeedings --review-demo --screenshot-tab \"$TAB\"\
+        \n  sleep 3\n  xcrun simctl io \"$DEVICE\" screenshot \"$CM_BUILD_DIR/artifacts/screenshots/tab$TAB.png\"\ndone\n\
+        cd \"$CM_BUILD_DIR/artifacts\"\nzip -qry Teddy-v1.6-Simulator-Review.zip screenshots\n"
     artifacts:
     - artifacts/Teddy-Feedings-unsigned.ipa
+    - artifacts/Teddy-v1.6-Simulator-Review.zip
+    - /tmp/teddy-simulator-build.log
