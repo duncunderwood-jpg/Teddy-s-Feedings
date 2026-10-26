@@ -12,6 +12,12 @@ workflows:
     scripts:
       - name: Extract source project
         script: unzip -q "$CM_BUILD_DIR/TeddysFeedings-Free-Cloud-Build.zip" -d "$CM_BUILD_DIR/source"
+      - name: Test natural speech parsing
+        script: |
+          set -euo pipefail
+          cd "$CM_BUILD_DIR/source/TeddysFeedings"
+          swiftc TeddysFeedings/Models.swift TeddysFeedings/SpokenFeedingParser.swift Tests/ParserSmokeTests.swift -o /tmp/teddy-parser-tests
+          /tmp/teddy-parser-tests
       - name: Build Teddy's Feedings for a real iPhone without signing
         script: |
           set -euo pipefail
