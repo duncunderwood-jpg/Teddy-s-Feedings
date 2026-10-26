@@ -67,7 +67,9 @@ workflows:
         $CM_BUILD_DIR/artifacts/screenshots\"\nfor TAB in 2 4 3; do\n  xcrun simctl terminate \"$DEVICE\" com.teddyfamily.teddysfeedings\
         \ || true\n  xcrun simctl launch \"$DEVICE\" com.teddyfamily.teddysfeedings --review-demo --screenshot-tab \"$TAB\"\
         \n  sleep 3\n  xcrun simctl io \"$DEVICE\" screenshot \"$CM_BUILD_DIR/artifacts/screenshots/tab$TAB.png\"\ndone\n\
-        cd \"$CM_BUILD_DIR/artifacts\"\nzip -qry Teddy-v1.6-Simulator-Review.zip screenshots\n"
+        xcrun simctl terminate \"$DEVICE\" com.teddyfamily.teddysfeedings || true\nxcrun simctl launch \"$DEVICE\" com.teddyfamily.teddysfeedings\
+        \ --review-demo --screenshot-tab 3 --screenshot-sharing\nsleep 3\nxcrun simctl io \"$DEVICE\" screenshot \"$CM_BUILD_DIR/artifacts/screenshots/family-sharing.png\"\
+        \ncd \"$CM_BUILD_DIR/artifacts\"\nzip -qry Teddy-v1.6-Simulator-Review.zip screenshots\n"
     artifacts:
     - artifacts/Teddy-Feedings-unsigned.ipa
     - artifacts/Teddy-v1.6-Simulator-Review.zip
