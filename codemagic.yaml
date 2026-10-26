@@ -59,7 +59,7 @@ workflows:
             sleep 2
             xcrun simctl io "$DEVICE" screenshot "$CM_BUILD_DIR/artifacts/screenshots/tab$TAB.png"
           done
-          for SCREEN in reminder editor; do
+          for SCREEN in reminder editor topup plan; do
             xcrun simctl terminate "$DEVICE" com.teddyfamily.teddysfeedings || true
             xcrun simctl launch "$DEVICE" com.teddyfamily.teddysfeedings --review-demo "--screenshot-$SCREEN"
             sleep 2
