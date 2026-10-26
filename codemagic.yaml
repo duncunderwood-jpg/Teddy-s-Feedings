@@ -61,10 +61,14 @@ workflows:
               xcrun simctl io "$DEVICE" screenshot "$CM_BUILD_DIR/artifacts/screenshots/$MODE-tab$TAB.png"
             done
           done
+          xcrun simctl terminate "$DEVICE" com.teddyfamily.teddysfeedings || true
+          xcrun simctl launch "$DEVICE" com.teddyfamily.teddysfeedings --screenshot-reminder
+          sleep 3
+          xcrun simctl io "$DEVICE" screenshot "$CM_BUILD_DIR/artifacts/screenshots/feeding-message.png"
           cd "$CM_BUILD_DIR/artifacts"
-          zip -qry Teddy-v1.3-Simulator-Review.zip screenshots
+          zip -qry Teddy-v1.4-Simulator-Review.zip screenshots
     artifacts:
       - artifacts/Teddy-Feedings-unsigned.ipa
-      - artifacts/Teddy-v1.3-Simulator-Review.zip
+      - artifacts/Teddy-v1.4-Simulator-Review.zip
       - /tmp/teddy-simulator-build.log
       - /tmp/xcodebuild_logs/*.log
