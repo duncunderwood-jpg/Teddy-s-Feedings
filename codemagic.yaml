@@ -42,6 +42,29 @@ workflows:
           cd "$CM_BUILD_DIR/artifacts"
           zip -qry Teddy-Feedings-unsigned.ipa Payload
           test -s Teddy-Feedings-unsigned.ipa
+      - name: Render nursery screens in light and dark device appearances
+        script: |
+          set -euo pipefail
+          xcodebuild -project "$CM_BUILD_DIR/source/TeddysFeedings/TeddysFeedings.xcodeproj" -scheme TeddysFeedings -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$CM_BUILD_DIR/build/simulator" CODE_SIGNING_ALLOWED=NO build > /tmp/teddy-simulator-build.log 2>&1
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import sys,json; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for k,v in sorted(d.items(),reverse=True) if "iOS" in k for x in v if "iPhone" in x["name"]))')
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl install "$DEVICE" "$CM_BUILD_DIR/build/simulator/Build/Products/Debug-iphonesimulator/TeddysFeedings.app"
+          xcrun simctl status_bar "$DEVICE" override --time '9:41' --batteryState charged --batteryLevel 100
+          mkdir -p "$CM_BUILD_DIR/artifacts/screenshots"
+          for MODE in light dark; do
+            xcrun simctl ui "$DEVICE" appearance "$MODE"
+            for TAB in 0 1 2 3; do
+              xcrun simctl terminate "$DEVICE" com.teddyfamily.teddysfeedings || true
+              xcrun simctl launch "$DEVICE" com.teddyfamily.teddysfeedings --screenshot-tab "$TAB"
+              sleep 3
+              xcrun simctl io "$DEVICE" screenshot "$CM_BUILD_DIR/artifacts/screenshots/$MODE-tab$TAB.png"
+            done
+          done
+          cd "$CM_BUILD_DIR/artifacts"
+          zip -qry Teddy-v1.3-Simulator-Review.zip screenshots
     artifacts:
       - artifacts/Teddy-Feedings-unsigned.ipa
+      - artifacts/Teddy-v1.3-Simulator-Review.zip
+      - /tmp/teddy-simulator-build.log
       - /tmp/xcodebuild_logs/*.log
